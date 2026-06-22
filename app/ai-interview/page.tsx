@@ -1,8 +1,9 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ChevronRight, Mic, RotateCcw } from 'lucide-react'
+import { ArrowRight, CheckCircle2, ChevronRight, FileText, Mic, RotateCcw } from 'lucide-react'
 
 // ── Data ───────────────────────────────────────────────────────────────────
 
@@ -54,6 +55,29 @@ const TOP_CANDIDATES = [
 const AI_BARS   = Array.from({ length: 20 }, (_, i) => 8  + Math.abs(Math.sin(i * 0.7 + 0.3)) * 22)
 const CAND_BARS = Array.from({ length: 28 }, (_, i) => 6  + Math.abs(Math.sin(i * 1.4 + 0.6)) * 14 + Math.abs(Math.cos(i * 2.3)) * 7)
 
+// 模拟作答转写（演示用，对应每道题）
+const MOCK_ANSWERS = [
+  '我主导的推荐系统召回优化项目，核心挑战是冷启动场景下的多路召回融合。我们采用双塔模型结合在线学习，通过 AB 测试验证，CTR 提升 23%，召回延迟控制在 50ms 以内。',
+  '我设计的算法系统中台，选型上对比了 TensorFlow Serving 与自研推理引擎，最终选择自研以支持动态 batching。架构上做了模型与算子解耦，落地后 QPS 提升 4 倍，年节省机器成本约 300 万。',
+  '遇到技术分歧时我倾向于用数据说话。有一次关于是否引入图神经网络的争论，我组织了离线评估与线上灰度实验，用指标对比推动团队达成共识，最终方案上线后留存提升 1.8%。',
+  '我认为公平性与效果并非完全对立。通过引入反事实评估与约束优化，我们能在保证业务指标的前提下将群体偏差降低 15%，关键是把公平性纳入建模目标而非事后修补。',
+  '我希望未来 3-5 年在语音 AI 与大模型融合方向深入，先夯实算法工程能力，再逐步承担技术规划角色。思必驰在语音领域的积累与 AI 办公本的落地场景与我的方向高度契合。',
+]
+
+// 面试结束后 AI 生成的评估摘要（演示用）
+const MOCK_REPORT = {
+  overall: 86,
+  recommendation: '推荐进入线下复试',
+  summary: '候选人技术功底扎实，对推荐系统优化有完整方法论与量化成果；表达逻辑清晰，能结合 STAR 结构组织案例。建议线下复试重点考察大规模系统落地与跨团队协作细节。',
+  dimensions: [
+    { name: '技术深度', score: 88 },
+    { name: '表达能力', score: 84 },
+    { name: '逻辑思维', score: 90 },
+    { name: '职业动机', score: 82 },
+    { name: '团队协作', score: 85 },
+  ],
+}
+
 type AiPhase = 'speaking' | 'waiting' | 'recording'
 
 function formatTime(s: number) {
@@ -79,6 +103,8 @@ export default function AIInterviewPage() {
   const [aiPhase, setAiPhase]             = useState<AiPhase>('speaking')
   const [speakKey, setSpeakKey]           = useState(0)
   const [seconds, setSeconds]             = useState(0)
+  const [answers, setAnswers] = useState<Record<number, { duration: number; transcript: string }>>({})
+  const [finished, setFinished] = useState(false)
 
   // HR view
   const [hrCompleted, setHrCompleted] = useState(0)
@@ -139,9 +165,32 @@ export default function AIInterviewPage() {
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
+  function recordAnswer() {
+    setAnswers(prev => ({
+      ...prev,
+      [questionIndex]: { duration: seconds, transcript: MOCK_ANSWERS[questionIndex] },
+    }))
+  }
+
   function nextQuestion() {
     if (questionIndex >= 4) return
+    recordAnswer()
     setQuestionIndex(qi => qi + 1)
+    setAiPhase('speaking')
+    setSeconds(0)
+    setSpeakKey(k => k + 1)
+  }
+
+  function finishInterview() {
+    if (aiPhase !== 'recording') return
+    recordAnswer()
+    setFinished(true)
+  }
+
+  function restartInterview() {
+    setFinished(false)
+    setAnswers({})
+    setQuestionIndex(0)
     setAiPhase('speaking')
     setSeconds(0)
     setSpeakKey(k => k + 1)
@@ -191,6 +240,7 @@ export default function AIInterviewPage() {
       ══════════════════════════════════════════════════════════════════ */}
       {activeTab === 'candidate' && (
         <div className="flex-1 flex flex-col overflow-hidden">
+          {!finished ? (<>
 
           {/* Progress bar */}
           <div
@@ -212,6 +262,19 @@ export default function AIInterviewPage() {
                 {Math.round(((questionIndex + 1) / 5) * 100)}%
               </span>
             </div>
+            {Object.keys(answers).length > 0 && (
+              <div className="max-w-2xl mx-auto flex flex-wrap gap-2 mt-3">
+                {Object.entries(answers).map(([k, v]) => (
+                  <span
+                    key={k}
+                    className="flex items-center gap-1 text-[10px] text-muted-foreground/60 px-2 py-0.5 rounded-full border border-white/[0.06]"
+                  >
+                    <CheckCircle2 className="w-2.5 h-2.5 text-emerald-400" />
+                    第{Number(k) + 1}题 · {formatTime(v.duration)}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Main content */}
@@ -368,13 +431,13 @@ export default function AIInterviewPage() {
                   重新作答
                 </button>
                 <button
-                  onClick={nextQuestion}
-                  disabled={aiPhase !== 'recording' || questionIndex >= 4}
+                  onClick={questionIndex >= 4 ? finishInterview : nextQuestion}
+                  disabled={aiPhase !== 'recording'}
                   className="flex items-center gap-1.5 px-4 py-2 text-sm rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                   style={{ background: 'rgba(34,211,238,0.14)', color: '#22d3ee' }}
                 >
-                  {questionIndex >= 4 ? '面试结束' : '完成作答，下一题'}
-                  {questionIndex < 4 && <ChevronRight className="w-4 h-4" />}
+                  {questionIndex >= 4 ? '完成作答，结束面试' : '完成作答，下一题'}
+                  <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -386,6 +449,155 @@ export default function AIInterviewPage() {
               本次面试共 5 题，预计 25 分钟 · 请在安静环境中作答
             </p>
           </div>
+          </>) : (
+          <div className="flex-1 overflow-y-auto px-10 py-8">
+            {/* ════ 完成页：作答记录 + AI评估 + 工作流引导 ════ */}
+            <div className="max-w-2xl mx-auto space-y-6">
+
+              {/* 头部 */}
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-center space-y-3"
+              >
+                <div
+                  className="inline-flex w-14 h-14 rounded-full items-center justify-center"
+                  style={{ background: 'rgba(34,211,238,0.1)', border: '2px solid rgba(34,211,238,0.4)' }}
+                >
+                  <CheckCircle2 className="w-7 h-7" style={{ color: '#22d3ee' }} />
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold text-foreground">面试已完成</h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    候选人 · 张伟 · 高级算法工程师 · AI 已生成评估报告
+                  </p>
+                </div>
+              </motion.div>
+
+              {/* 作答记录 */}
+              <div
+                className="rounded-xl p-5 space-y-3"
+                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+              >
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  作答记录 · AI 实时转写
+                </p>
+                {QUESTIONS.map((qq, i) => {
+                  const a = answers[i]
+                  return (
+                    <div key={i} className="flex gap-3">
+                      <span className="text-xs font-mono text-primary/70 shrink-0 w-6 mt-0.5">Q{i + 1}</span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span
+                            className="text-[10px] px-1.5 py-0.5 rounded"
+                            style={{ background: 'rgba(34,211,238,0.08)', color: 'rgba(34,211,238,0.7)' }}
+                          >
+                            {qq.type}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground/50">
+                            作答时长 {a ? formatTime(a.duration) : '--'}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground/55 leading-relaxed line-clamp-2">
+                          {a ? a.transcript : '未作答'}
+                        </p>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* AI 评估摘要 */}
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+                className="rounded-xl p-5 space-y-4"
+                style={{ background: 'rgba(34,211,238,0.04)', border: '1px solid rgba(34,211,238,0.15)' }}
+              >
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    AI 评估摘要
+                  </p>
+                  <span
+                    className="text-[10px] px-2 py-0.5 rounded-full"
+                    style={{ background: 'rgba(34,211,238,0.12)', color: '#22d3ee' }}
+                  >
+                    {MOCK_REPORT.recommendation}
+                  </span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="text-4xl font-bold shrink-0" style={{ color: '#22d3ee' }}>
+                    {MOCK_REPORT.overall}
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed flex-1">
+                    {MOCK_REPORT.summary}
+                  </p>
+                </div>
+                <div className="space-y-2 pt-1">
+                  {MOCK_REPORT.dimensions.map((d, i) => (
+                    <div key={d.name} className="flex items-center gap-3">
+                      <span className="text-xs text-muted-foreground w-20 shrink-0">{d.name}</span>
+                      <div className="flex-1 h-1.5 rounded-full overflow-hidden bg-white/[0.06]">
+                        <motion.div
+                          className="h-full rounded-full"
+                          style={{ background: '#22d3ee' }}
+                          initial={{ width: 0 }}
+                          animate={{ width: `${d.score}%` }}
+                          transition={{ duration: 0.6, delay: 0.2 + i * 0.08 }}
+                        />
+                      </div>
+                      <span className="text-xs font-mono w-7 text-right" style={{ color: '#22d3ee' }}>
+                        {d.score}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+
+              {/* 工作流引导 · 分工 */}
+              <div
+                className="rounded-xl p-5"
+                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+              >
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">
+                  下一步 · 工作流分工
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <Link
+                    href="/hr"
+                    className="group flex items-center gap-3 p-3 rounded-lg border border-white/[0.08] hover:border-primary/40 hover:bg-primary/5 transition-colors"
+                  >
+                    <FileText className="w-4 h-4 text-primary/70 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-sm text-foreground font-medium">转交 HR 复核</p>
+                      <p className="text-[10px] text-muted-foreground/60">HR 面试助手实时分析</p>
+                    </div>
+                    <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/40 group-hover:text-primary ml-auto transition-colors" />
+                  </Link>
+                  <Link
+                    href="/candidate"
+                    className="group flex items-center gap-3 p-3 rounded-lg border border-white/[0.08] hover:border-primary/40 hover:bg-primary/5 transition-colors"
+                  >
+                    <RotateCcw className="w-4 h-4 text-primary/70 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-sm text-foreground font-medium">候选人复盘</p>
+                      <p className="text-[10px] text-muted-foreground/60">回放与改进建议</p>
+                    </div>
+                    <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/40 group-hover:text-primary ml-auto transition-colors" />
+                  </Link>
+                </div>
+                <button
+                  onClick={restartInterview}
+                  className="mt-3 w-full py-2 text-xs text-muted-foreground/60 hover:text-foreground transition-colors"
+                >
+                  重新面试
+                </button>
+              </div>
+            </div>
+          </div>
+          )}
         </div>
       )}
 

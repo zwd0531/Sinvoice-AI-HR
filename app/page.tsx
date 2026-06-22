@@ -180,6 +180,70 @@ export default function Home() {
       <div className="border-t border-border/30" />
 
       {/* ══════════════════════════════════════════
+          工作流导览 · 三方分工
+      ══════════════════════════════════════════ */}
+      <motion.section
+        className="px-16 pt-20 pb-12"
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true, margin: '-80px' }}
+      >
+        <motion.div variants={fadeUp} transition={sectionTransition} className="mb-10">
+          <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground/50 mb-3">
+            一站式面试分析闭环
+          </p>
+          <h2 className="text-3xl font-bold text-foreground">
+            AI 执面 · HR 决策 · 候选人成长，分工明确
+          </h2>
+          <p className="text-sm text-muted-foreground mt-3 max-w-2xl">
+            从 AI 自动面试，到 HR 实时分析辅助决策，再到候选人自助复盘——三个角色，一条工作流，数据全程贯通。
+          </p>
+        </motion.div>
+
+        <motion.div
+          className="grid grid-cols-3 gap-4"
+          variants={stagger(0.12)}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: '-60px' }}
+        >
+          {[
+            { step: '01', role: 'AI 面试官', icon: Bot, href: '/ai-interview', who: 'AI 全程主导', desc: 'AI 自动播题、录音转写、多维评分，支持同步/异步面试，自动生成评估报告' },
+            { step: '02', role: 'HR 面试助手', icon: Mic, href: '/hr', who: 'AI 辅助 · HR 决策', desc: '实时转写、情绪感知、关键词抽取与追问建议，HR 专注判断与决策' },
+            { step: '03', role: '候选人复盘', icon: BarChart3, href: '/candidate', who: 'AI 辅助 · 候选人成长', desc: '面试回放、竞争力雷达、AI 改进建议与针对性练习反馈' },
+          ].map(({ step, role, icon: Icon, href, who, desc }) => (
+            <motion.div
+              key={step}
+              variants={{ ...fadeUp, show: { ...fadeUp.show, transition: itemTransition } }}
+            >
+              <Link
+                href={href}
+                className="group relative block rounded-xl border border-border/40 p-6 hover:border-primary/40 hover:bg-primary/[0.03] transition-colors h-full"
+              >
+                <div className="flex items-center justify-between mb-5">
+                  <span className="text-xs font-mono text-muted-foreground/40">{step}</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full border border-primary/30 text-primary/70">
+                    {who}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3 mb-3">
+                  <Icon className="size-5 text-primary/70 group-hover:text-primary transition-colors" strokeWidth={1.5} />
+                  <h3 className="text-base font-semibold text-foreground">{role}</h3>
+                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
+                <div className="mt-4 flex items-center gap-1 text-xs text-muted-foreground/40 group-hover:text-primary/60 transition-colors">
+                  <span>进入演示</span>
+                  <ArrowRight className="size-3" />
+                </div>
+              </Link>
+            </motion.div>
+          ))}
+        </motion.div>
+      </motion.section>
+
+      <div className="border-t border-border/30" />
+
+      {/* ══════════════════════════════════════════
           第二屏 · 功能模块
       ══════════════════════════════════════════ */}
       <motion.section

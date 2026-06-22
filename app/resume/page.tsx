@@ -7,7 +7,7 @@ import { ChevronDown, X } from 'lucide-react'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
-type Column = 'pending' | 'passed' | 'talent'
+type Column = 'pending' | 'passed' | 'talent' | 'rejected'
 
 interface Dim {
   label: string
@@ -161,9 +161,20 @@ const COL_LABELS: Record<Column, string> = {
   pending: '待处理',
   passed: '初筛通过',
   talent: '人才库',
+  rejected: '已淘汰',
 }
 
-const COLUMNS: Column[] = ['pending', 'passed', 'talent']
+const COLUMNS: Column[] = ['pending', 'passed', 'talent', 'rejected']
+
+const JD_OPTIONS = ['全部岗位', '高级算法工程师', '算法工程师', '初级算法工程师']
+
+// 筛选标签键 → 断言
+type FilterKey = 'master' | 'years5' | 'score85'
+const FILTER_LABELS: { key: FilterKey; label: string }[] = [
+  { key: 'master', label: '硕士+' },
+  { key: 'years5', label: '5年+' },
+  { key: 'score85', label: '匹配>85' },
+]
 
 function scoreColor(s: number): string {
   return s > 85 ? '#22d3ee' : s >= 60 ? '#eab308' : '#ef4444'
@@ -184,6 +195,26 @@ export default function ResumePage() {
   const [selected, setSelected] = useState<number | null>(null)
   const [received, setReceived] = useState(0)
   const [processed, setProcessed] = useState(0)
+  const [jdFilter, setJdFilter] = useState<string>('全部岗位')
+  const [jdOpen, setJdOpen] = useState(false)
+  const [filters, setFilters] = useState<Set<FilterKey>>(new Set())
+
+  function toggleFilter(key: FilterKey) {
+    setFilters(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
+  const filtered = candidates.filter(c => {
+    if (jdFilter !== '全部岗位' && c.target !== jdFilter) return false
+    if (filters.has('master') && !['硕士', '博士'].includes(c.edu)) return false
+    if (filters.has('years5') && c.years < 5) return false
+    if (filters.has('score85') && c.score <= 85) return false
+    return true
+  })
 
   useEffect(() => {
     let r = 0
@@ -202,7 +233,7 @@ export default function ResumePage() {
   function advance(id: number) {
     setCandidates(prev =>
       prev.map(c => {
-        if (c.id !== id || c.column === 'talent') return c
+        if (c.id !== id || c.column === 'talent' || c.column === 'rejected') return c
         const next: Column = c.column === 'pending' ? 'passed' : 'talent'
         return { ...c, column: next }
       })
@@ -216,7 +247,7 @@ export default function ResumePage() {
   }
 
   function reject(id: number) {
-    setCandidates(prev => prev.filter(c => c.id !== id))
+    setCandidates(prev => prev.map(c => c.id === id ? { ...c, column: 'rejected' as Column } : c))
     setSelected(null)
   }
 
@@ -228,23 +259,65 @@ export default function ResumePage() {
       {/* ── Toolbar ─────────────────────────────────────────────────────── */}
       <div className="h-12 flex items-center px-6 gap-5 shrink-0 border-b border-white/[0.06]">
         {/* JD selector */}
-        <div className="flex items-center gap-1 text-sm font-medium text-foreground cursor-pointer select-none">
-          <span>高级算法工程师</span>
-          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground mt-px" />
+        <div className="relative">
+          <button
+            onClick={() => setJdOpen(o => !o)}
+            className="flex items-center gap-1 text-sm font-medium text-foreground cursor-pointer select-none"
+          >
+            <span>{jdFilter}</span>
+            <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground mt-px transition-transform ${jdOpen ? 'rotate-180' : ''}`} />
+          </button>
+          {jdOpen && (
+            <>
+              <div className="fixed inset-0 z-30" onClick={() => setJdOpen(false)} />
+              <div
+                className="absolute top-full left-0 mt-1 z-40 rounded-lg border border-white/10 py-1 min-w-[160px]"
+                style={{ background: '#0d1424' }}
+              >
+                {JD_OPTIONS.map(opt => (
+                  <button
+                    key={opt}
+                    onClick={() => { setJdFilter(opt); setJdOpen(false) }}
+                    className={`block w-full text-left px-3 py-1.5 text-sm hover:bg-white/[0.06] transition-colors ${jdFilter === opt ? 'text-primary' : 'text-foreground/80'}`}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
         <div className="w-px h-4 bg-white/10 shrink-0" />
 
         {/* Filter chips */}
         <div className="flex items-center gap-1.5">
-          {['全部学历', '硕士+', '5年+', '匹配>85'].map(tag => (
-            <span
-              key={tag}
-              className="px-2 py-0.5 text-xs text-muted-foreground rounded border border-white/[0.08] hover:border-white/20 cursor-pointer transition-colors"
-            >
-              {tag}
-            </span>
-          ))}
+          <button
+            onClick={() => setFilters(new Set())}
+            className={`px-2 py-0.5 text-xs rounded border transition-colors ${
+              filters.size === 0
+                ? 'text-primary border-primary/40 bg-primary/10'
+                : 'text-muted-foreground border-white/[0.08] hover:border-white/20'
+            }`}
+          >
+            全部
+          </button>
+          {FILTER_LABELS.map(({ key, label }) => {
+            const active = filters.has(key)
+            return (
+              <button
+                key={key}
+                onClick={() => toggleFilter(key)}
+                className={`px-2 py-0.5 text-xs rounded border transition-colors ${
+                  active
+                    ? 'text-primary border-primary/40 bg-primary/10'
+                    : 'text-muted-foreground border-white/[0.08] hover:border-white/20'
+                }`}
+              >
+                {label}
+              </button>
+            )
+          })}
         </div>
 
         {/* Stats */}
@@ -265,7 +338,7 @@ export default function ResumePage() {
       {/* ── Kanban columns ──────────────────────────────────────────────── */}
       <div className="flex-1 flex overflow-hidden">
         {COLUMNS.map((col, ci) => {
-          const items = candidates.filter(c => c.column === col)
+          const items = filtered.filter(c => c.column === col)
           return (
             <div
               key={col}
@@ -273,7 +346,11 @@ export default function ResumePage() {
             >
               {/* Column header */}
               <div className="h-9 flex items-center px-4 gap-2 shrink-0 border-b border-white/[0.04]">
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                <span
+                  className={`text-xs font-medium uppercase tracking-wider ${
+                    col === 'rejected' ? 'text-red-400/70' : 'text-muted-foreground'
+                  }`}
+                >
                   {COL_LABELS[col]}
                 </span>
                 <span
@@ -467,23 +544,25 @@ export default function ResumePage() {
               <div className="shrink-0 px-5 py-4 border-t border-white/[0.06] flex gap-2">
                 <button
                   onClick={() => advance(sel.id)}
-                  disabled={sel.column === 'talent'}
+                  disabled={sel.column === 'talent' || sel.column === 'rejected'}
                   className="flex-1 py-2 text-xs font-medium rounded bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  {sel.column === 'talent' ? '已在人才库' : '进入下一阶段'}
+                  {sel.column === 'talent' ? '已在人才库' : sel.column === 'rejected' ? '已淘汰' : '进入下一阶段'}
                 </button>
                 <button
                   onClick={() => archive(sel.id)}
                   className="flex-1 py-2 text-xs font-medium rounded bg-white/[0.04] text-muted-foreground hover:bg-white/[0.08] hover:text-foreground transition-colors"
                 >
-                  放入人才库
+                  {sel.column === 'rejected' ? '移回人才库' : '放入人才库'}
                 </button>
-                <button
-                  onClick={() => reject(sel.id)}
-                  className="flex-1 py-2 text-xs font-medium rounded bg-red-500/[0.08] text-red-400/80 hover:bg-red-500/15 transition-colors"
-                >
-                  不合适
-                </button>
+                {sel.column !== 'rejected' && (
+                  <button
+                    onClick={() => reject(sel.id)}
+                    className="flex-1 py-2 text-xs font-medium rounded bg-red-500/[0.08] text-red-400/80 hover:bg-red-500/15 transition-colors"
+                  >
+                    不合适
+                  </button>
+                )}
               </div>
             </motion.div>
           </>

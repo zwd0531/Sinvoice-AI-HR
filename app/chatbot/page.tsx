@@ -241,6 +241,14 @@ export default function ChatbotPage() {
   function newConv() {
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
     if (typingIntervalRef.current) clearInterval(typingIntervalRef.current)
+    // 将当前对话存入历史
+    const firstUser = messages.find(m => m.role === 'user')
+    if (firstUser) {
+      setConversations(prev => [
+        { id: Date.now(), title: firstUser.content.slice(0, 16), time: '刚刚' },
+        ...prev,
+      ])
+    }
     setMessages([{ ...WELCOME, id: Date.now() }])
     setInput('')
   }

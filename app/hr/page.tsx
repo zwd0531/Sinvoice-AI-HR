@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   Legend,
@@ -59,6 +59,15 @@ const ALL_KEYWORDS = [
   { word: '薪资期望 5.5万+', weight: 'high', at: 20 },
 ]
 
+// 面试阶段（分工可视化）
+const PHASES = ['面试准备', '实时分析', '生成报告', '归档完成'] as const
+const PHASE_HINTS = [
+  '等待 HR 开始面试',
+  'AI 正在转写、感知情绪、抽取关键词',
+  'AI 已生成结构化评估报告',
+  '报告已归档至候选人档案',
+] as const
+
 // ── Component ──────────────────────────────────────────────────────────────
 
 export default function HRAssistantPage() {
@@ -84,6 +93,7 @@ export default function HRAssistantPage() {
   // Report dialog + toast
   const [reportOpen, setReportOpen] = useState(false)
   const [toastMsg, setToastMsg] = useState('')
+  const [archived, setArchived] = useState(false)
 
   // Scroll anchor
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -234,6 +244,9 @@ export default function HRAssistantPage() {
 
   const visibleKeywords = ALL_KEYWORDS.filter((k) => k.at <= displayedCount)
 
+  // 当前阶段：准备 → 实时分析 → 生成报告 → 归档完成
+  const phaseIndex = !isStarted ? 0 : archived ? 3 : reportOpen ? 2 : 1
+
   const formatTime = (s: number) =>
     `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 
@@ -296,6 +309,8 @@ export default function HRAssistantPage() {
                   setIsTyping(false)
                   isSpeakingRef.current = false
                   setEmotionData([{ t: '0s', v: 72 }])
+                  setArchived(false)
+                  setReportOpen(false)
                 }}
               >
                 重新开始
@@ -311,6 +326,46 @@ export default function HRAssistantPage() {
             </>
           )}
         </div>
+      </div>
+
+      {/* ── Phase Strip · 分工可视化 ──────────────────────────────────────── */}
+      <div className="h-9 shrink-0 flex items-center px-6 gap-2.5 border-b border-border/50 bg-card/30">
+        {PHASES.map((p, i) => {
+          const done = phaseIndex > i
+          const current = phaseIndex === i
+          return (
+            <Fragment key={p}>
+              <div
+                className={`flex items-center gap-1.5 text-xs transition-colors ${
+                  current
+                    ? 'text-primary font-medium'
+                    : done
+                      ? 'text-muted-foreground'
+                      : 'text-muted-foreground/40'
+                }`}
+              >
+                <span
+                  className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-mono ${
+                    current
+                      ? 'bg-primary text-primary-foreground'
+                      : done
+                        ? 'bg-emerald-500/20 text-emerald-400'
+                        : 'border border-border/50'
+                  }`}
+                >
+                  {done ? '✓' : i + 1}
+                </span>
+                {p}
+              </div>
+              {i < PHASES.length - 1 && (
+                <span className="text-muted-foreground/20 text-[10px]">→</span>
+              )}
+            </Fragment>
+          )
+        })}
+        <span className="ml-auto text-[10px] text-muted-foreground/50">
+          {PHASE_HINTS[phaseIndex]}
+        </span>
       </div>
 
       {/* ── Three Columns ─────────────────────────────────────────────────── */}
@@ -468,7 +523,7 @@ export default function HRAssistantPage() {
                 }`}
               />
               <span className="text-[10px] text-muted-foreground">
-                {isPaused ? '已暂停' : '实时转写'}
+                {isPaused ? '已暂停' : 'AI 实时转写'}
               </span>
             </div>
           </div>
@@ -480,14 +535,14 @@ export default function HRAssistantPage() {
             <TabsList className="shrink-0 mx-3 mt-3">
               <TabsTrigger value="suggestions" className="flex-1 text-xs gap-1">
                 <Zap className="w-3 h-3" />
-                追问建议
+                AI 追问建议
               </TabsTrigger>
               <TabsTrigger value="emotion" className="flex-1 text-xs gap-1">
                 <Brain className="w-3 h-3" />
-                情绪感知
+                AI 情绪感知
               </TabsTrigger>
               <TabsTrigger value="keywords" className="flex-1 text-xs gap-1">
-                关键词
+                AI 关键词
               </TabsTrigger>
             </TabsList>
 
@@ -718,10 +773,11 @@ export default function HRAssistantPage() {
               size="sm"
               onClick={() => {
                 setReportOpen(false)
-                setToastMsg('PDF 导出成功，文件已保存到下载目录')
+                setArchived(true)
+                setToastMsg('面试评估报告已生成并归档至候选人档案')
               }}
             >
-              导出 PDF
+              确认归档
             </Button>
           </DialogFooter>
         </DialogContent>

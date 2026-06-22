@@ -43,6 +43,9 @@ const SUBTITLES = [
   { start: 1180, end: 1320, text: '以上就是我的简单介绍，期待能有机会和团队深度交流，谢谢。' },
 ]
 
+// 字幕时间轴总跨度，用于按实际上传视频时长等比缩放
+const SUBTITLE_SPAN = SUBTITLES[SUBTITLES.length - 1].end
+
 const RADAR_DATA = [
   { subject: '技术深度', candidate: 83, benchmark: 72, fullMark: 100 },
   { subject: '表达清晰', candidate: 76, benchmark: 68, fullMark: 100 },
@@ -114,11 +117,23 @@ export default function CandidateReviewPage() {
   const subtitleRefs = useRef<(HTMLDivElement | null)[]>([])
   const [reviewVisible, setReviewVisible] = useState(false)
   const [analysisVisible, setAnalysisVisible] = useState(false)
+  const [videoDuration, setVideoDuration] = useState(0)
+  const feedbackIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => { setTimelineStarted(true) }, [])
 
+  useEffect(() => () => {
+    if (feedbackIntervalRef.current) clearInterval(feedbackIntervalRef.current)
+  }, [])
+
+  // 字幕/标记按视频时长等比缩放，保证与任意上传视频对齐
+  const scaleTime = (t: number) =>
+    videoDuration > 0 ? (t / SUBTITLE_SPAN) * videoDuration : t
+  const fmtTime = (t: number) =>
+    `${Math.floor(t / 60)}:${String(Math.round(t % 60)).padStart(2, '0')}`
+
   const activeSubtitle = SUBTITLES.findIndex(
-    (s) => currentTime >= s.start && currentTime < s.end
+    (s) => currentTime >= scaleTime(s.start) && currentTime < scaleTime(s.end)
   )
 
   useEffect(() => {
@@ -131,6 +146,7 @@ export default function CandidateReviewPage() {
   }, [activeSubtitle])
 
   function startFeedback(exerciseIdx: number, fullText: string) {
+    if (feedbackIntervalRef.current) clearInterval(feedbackIntervalRef.current)
     setFeedbackText((prev) => ({ ...prev, [exerciseIdx]: '' }))
     setFeedbackDone((prev) => ({ ...prev, [exerciseIdx]: false }))
     let i = 0
@@ -139,9 +155,11 @@ export default function CandidateReviewPage() {
       setFeedbackText((prev) => ({ ...prev, [exerciseIdx]: fullText.slice(0, i) }))
       if (i >= fullText.length) {
         clearInterval(iv)
+        feedbackIntervalRef.current = null
         setFeedbackDone((prev) => ({ ...prev, [exerciseIdx]: true }))
       }
     }, 20)
+    feedbackIntervalRef.current = iv
   }
 
   function jumpTo(time: number) {
@@ -239,6 +257,7 @@ export default function CandidateReviewPage() {
                 className="w-full rounded-xl bg-black"
                 style={{ accentColor: '#22d3ee', aspectRatio: '16/9' }}
                 onTimeUpdate={() => setCurrentTime(videoRef.current?.currentTime ?? 0)}
+                onLoadedMetadata={() => setVideoDuration(videoRef.current?.duration ?? 0)}
               />
               <button
                 onClick={() => fileInputRef.current?.click()}
@@ -268,11 +287,11 @@ export default function CandidateReviewPage() {
                 {MARKERS.map((m) => (
                   <button
                     key={m.time}
-                    onClick={() => jumpTo(m.time)}
+                    onClick={() => jumpTo(scaleTime(m.time))}
                     className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-border/50 text-xs text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors bg-card/40"
                   >
                     <span className="font-mono text-[10px] text-primary/70">
-                      {Math.floor(m.time / 60)}:{String(m.time % 60).padStart(2, '0')}
+                      {fmtTime(scaleTime(m.time))}
                     </span>
                     {m.label}
                   </button>
@@ -284,7 +303,7 @@ export default function CandidateReviewPage() {
                   <div
                     key={i}
                     ref={(el) => { subtitleRefs.current[i] = el }}
-                    onClick={() => jumpTo(s.start)}
+                    onClick={() => jumpTo(scaleTime(s.start))}
                     className={`flex gap-3 px-3 py-2.5 cursor-pointer transition-colors border-b border-border/30 last:border-0 ${
                       i === activeSubtitle ? 'bg-primary/10' : 'hover:bg-card/60'
                     }`}
@@ -294,7 +313,7 @@ export default function CandidateReviewPage() {
                         i === activeSubtitle ? 'text-primary' : 'text-muted-foreground/40'
                       }`}
                     >
-                      {Math.floor(s.start / 60)}:{String(s.start % 60).padStart(2, '0')}
+                      {fmtTime(scaleTime(s.start))}
                     </span>
                     <span
                       className={`text-xs leading-relaxed ${
@@ -315,14 +334,14 @@ export default function CandidateReviewPage() {
             onClick={() => setAnalysisVisible(true)}
             className="mt-4 w-full py-2.5 rounded-xl border border-primary/40 bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            视频总结
+            ① 生成 AI 竞争力分析
           </button>
           {analysisVisible && (
             <button
               onClick={() => setReviewVisible(true)}
               className="mt-2 w-full py-2.5 rounded-xl border border-border/40 bg-card/40 text-muted-foreground text-sm font-medium hover:text-foreground hover:border-border/70 transition-colors"
             >
-              开始复盘
+              ② 查看完整复盘报告
             </button>
           )}
         </div>
@@ -484,7 +503,7 @@ export default function CandidateReviewPage() {
                     {MARKERS.map((m) => (
                       <div key={m.time} className="flex items-center gap-2 text-xs">
                         <span className="font-mono text-primary/70 shrink-0">
-                          {Math.floor(m.time / 60)}:{String(m.time % 60).padStart(2, '0')}
+                          {fmtTime(scaleTime(m.time))}
                         </span>
                         <span className="text-muted-foreground">{m.label}</span>
                       </div>
@@ -502,7 +521,7 @@ export default function CandidateReviewPage() {
                   {SUBTITLES.map((s, i) => (
                     <div key={i} className="flex gap-2 text-xs">
                       <span className="font-mono text-muted-foreground/50 shrink-0 mt-0.5">
-                        {Math.floor(s.start / 60)}:{String(s.start % 60).padStart(2, '0')}
+                        {fmtTime(scaleTime(s.start))}
                       </span>
                       <span className="text-foreground/70 leading-relaxed">{s.text}</span>
                     </div>
