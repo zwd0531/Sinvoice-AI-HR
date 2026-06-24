@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/dialog'
 import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { DemoBackdrop, DemoPanel, MetricTile, StatusPill } from '@/components/DemoBackdrop'
 import {
   mockFollowUpSuggestions,
   mockInterviewDialogs,
@@ -68,6 +69,27 @@ const PHASE_HINTS = [
   '报告已归档至候选人档案',
 ] as const
 
+const CONTEXT_METRICS = [
+  { label: 'JD 匹配', value: '92%', sub: '高级前端工程师', tone: 'cyan' as const },
+  { label: 'ASR 置信', value: '98.5%', sub: '6 麦克风阵列', tone: 'emerald' as const },
+  { label: '追问命中', value: '7/9', sub: '关键问题覆盖', tone: 'violet' as const },
+  { label: '风险提示', value: '2', sub: '协作与薪资待核', tone: 'amber' as const },
+]
+
+const INTERVIEW_CHECKLIST = [
+  { label: '项目深度', value: 82, status: '已覆盖' },
+  { label: '工程落地', value: 76, status: '追问中' },
+  { label: '团队协作', value: 58, status: '待补充' },
+  { label: '求职动机', value: 64, status: '待验证' },
+]
+
+const LIVE_SIGNALS = [
+  { label: '语速', value: '168 字/分', tone: 'cyan' as const },
+  { label: '停顿', value: '4 次', tone: 'amber' as const },
+  { label: '情绪', value: '稳定', tone: 'emerald' as const },
+  { label: '关键词', value: '10 个', tone: 'violet' as const },
+]
+
 // ── Component ──────────────────────────────────────────────────────────────
 
 export default function HRAssistantPage() {
@@ -84,6 +106,7 @@ export default function HRAssistantPage() {
   // Wave canvas
   const waveCanvasRef = useRef<HTMLCanvasElement>(null)
   const isSpeakingRef = useRef(false)
+  const [isSpeaking, setIsSpeaking] = useState(false)
 
   // Emotion chart
   const [emotionData, setEmotionData] = useState<{ t: string; v: number }[]>([
@@ -118,6 +141,7 @@ export default function HRAssistantPage() {
       const content = mockInterviewDialogs[displayedCount].content
       setIsTyping(true)
       isSpeakingRef.current = true
+      setIsSpeaking(true)
       let i = 0
       const iv = setInterval(() => {
         if (cancelled) {
@@ -129,6 +153,7 @@ export default function HRAssistantPage() {
         if (i >= content.length) {
           clearInterval(iv)
           isSpeakingRef.current = false
+          setIsSpeaking(false)
           setIsTyping(false)
           setTypingText('')
           setDisplayedCount((c) => c + 1)
@@ -253,9 +278,10 @@ export default function HRAssistantPage() {
   // ── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <div className="fixed top-14 left-0 right-0 bottom-0 flex flex-col overflow-hidden">
+    <div className="fixed top-14 left-0 right-0 bottom-0 flex flex-col overflow-hidden bg-[#0a0f1e]">
+      <DemoBackdrop density="dense" />
       {/* ── Top Bar ─────────────────────────────────────────────────────── */}
-      <div className="h-14 shrink-0 flex items-center justify-between px-6 border-b border-border/50 bg-card/60 backdrop-blur-md">
+      <div className="relative z-10 h-14 shrink-0 flex items-center justify-between px-6 border-b border-border/50 bg-card/60 backdrop-blur-md">
         {/* Candidate info */}
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
@@ -308,6 +334,7 @@ export default function HRAssistantPage() {
                   setTypingText('')
                   setIsTyping(false)
                   isSpeakingRef.current = false
+                  setIsSpeaking(false)
                   setEmotionData([{ t: '0s', v: 72 }])
                   setArchived(false)
                   setReportOpen(false)
@@ -329,7 +356,7 @@ export default function HRAssistantPage() {
       </div>
 
       {/* ── Phase Strip · 分工可视化 ──────────────────────────────────────── */}
-      <div className="h-9 shrink-0 flex items-center px-6 gap-2.5 border-b border-border/50 bg-card/30">
+      <div className="relative z-10 h-9 shrink-0 flex items-center px-6 gap-2.5 border-b border-border/50 bg-card/30">
         {PHASES.map((p, i) => {
           const done = phaseIndex > i
           const current = phaseIndex === i
@@ -368,8 +395,67 @@ export default function HRAssistantPage() {
         </span>
       </div>
 
+      {/* ── Command Context ─────────────────────────────────────────────── */}
+      <div className="relative z-10 shrink-0 border-b border-white/[0.06] bg-[#0a0f1e]/55 px-6 py-3 backdrop-blur-md">
+        <div className="grid gap-3 lg:grid-cols-[1.1fr_1.35fr_1fr]">
+          <DemoPanel className="p-3" tone="cyan">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.2em] text-white/40">Candidate Brief</p>
+                <p className="mt-1 text-sm font-semibold text-white">张伟 · 高级前端工程师</p>
+                <p className="mt-1 text-xs leading-relaxed text-white/55">
+                  阿里巴巴 5 年 · 低代码平台与性能优化经验 · 期望薪资 5.5 万
+                </p>
+              </div>
+              <StatusPill label="状态" value={isStarted ? '面试中' : '待开始'} tone={isStarted ? 'emerald' : 'blue'} />
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              {CONTEXT_METRICS.slice(0, 2).map((item) => (
+                <MetricTile key={item.label} {...item} />
+              ))}
+            </div>
+          </DemoPanel>
+
+          <DemoPanel className="p-3" tone="violet">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-white/40">Interview Coverage</p>
+              <span className="text-[10px] text-white/35">{displayedCount} / {mockInterviewDialogs.length} 轮对话</span>
+            </div>
+            <div className="mt-3 grid grid-cols-4 gap-2">
+              {INTERVIEW_CHECKLIST.map((item) => (
+                <div key={item.label} className="rounded-lg border border-white/[0.06] bg-white/[0.035] p-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate text-[10px] text-white/50">{item.label}</span>
+                    <span className="text-[10px] text-cyan-200">{item.value}%</span>
+                  </div>
+                  <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/[0.08]">
+                    <div className="h-full rounded-full bg-cyan-300/75" style={{ width: `${item.value}%` }} />
+                  </div>
+                  <p className="mt-1.5 truncate text-[10px] text-white/35">{item.status}</p>
+                </div>
+              ))}
+            </div>
+          </DemoPanel>
+
+          <DemoPanel className="p-3" tone="amber">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-white/40">Live Signals</p>
+              <span className="size-1.5 rounded-full bg-emerald-300 shadow-[0_0_14px_rgba(52,211,153,0.8)]" />
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              {LIVE_SIGNALS.map((signal) => (
+                <StatusPill key={signal.label} {...signal} />
+              ))}
+            </div>
+            <p className="mt-3 text-[10px] leading-relaxed text-white/40">
+              AI 将在候选人回答结束后自动生成追问建议，并持续同步关键词、情绪和风险点。
+            </p>
+          </DemoPanel>
+        </div>
+      </div>
+
       {/* ── Three Columns ─────────────────────────────────────────────────── */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="relative z-10 flex flex-1 overflow-hidden">
         {/* Left — Interview outline */}
         <div className="w-1/4 border-r border-border/50 overflow-y-auto p-4 flex flex-col gap-1">
           <p className="text-xs text-muted-foreground uppercase tracking-wider mb-3 font-medium">
@@ -519,7 +605,7 @@ export default function HRAssistantPage() {
             <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
               <div
                 className={`w-1.5 h-1.5 rounded-full ${
-                  isSpeakingRef.current ? 'bg-primary animate-pulse' : 'bg-muted-foreground'
+                  isSpeaking ? 'bg-primary animate-pulse' : 'bg-muted-foreground'
                 }`}
               />
               <span className="text-[10px] text-muted-foreground">

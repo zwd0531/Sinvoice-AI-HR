@@ -5,6 +5,7 @@ import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Mic, Plus, Send, Trash2 } from 'lucide-react'
+import { DemoBackdrop, DemoPanel, MetricTile, StatusPill } from '@/components/DemoBackdrop'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -60,14 +61,27 @@ const ANSWERS: Record<string, string> = {
 
 薪资构成：基本工资 + 绩效奖金（季度发放）+ 年终奖（次年3月发放）。`,
 
+  probation: `## 转正与离职流程
+
+### 转正评估
+- 试用期默认 3 个月，直属负责人在试用期结束前 10 个工作日发起评估
+- 评估维度包括目标达成、协作反馈、岗位胜任力和价值观匹配
+- 通过后 HR 在 2 个工作日内完成系统状态更新
+
+### 离职办理
+- 员工需提前 30 天提交离职申请，试用期提前 3 天
+- 完成工作交接、资产归还、权限关闭后可开具离职证明
+- 薪资结算随最近工资发放批次处理`,
+
   fallback: `您的问题已记录，HR 将在 **1个工作日** 内与您联系。也可以直接拨打 HR 热线：**400-XXX-XXXX**`,
 }
 
 function getAnswer(text: string): string {
   if (text.includes('入职')) return ANSWERS.onboarding
-  if (text.includes('年假')) return ANSWERS.leave
-  if (text.includes('面试')) return ANSWERS.interview
-  if (text.includes('薪资') || text.includes('工资')) return ANSWERS.salary
+  if (text.includes('年假') || text.includes('休假') || text.includes('考勤')) return ANSWERS.leave
+  if (text.includes('面试') || text.includes('招聘') || text.includes('Offer')) return ANSWERS.interview
+  if (text.includes('薪资') || text.includes('工资') || text.includes('薪酬') || text.includes('福利')) return ANSWERS.salary
+  if (text.includes('转正') || text.includes('离职')) return ANSWERS.probation
   return ANSWERS.fallback
 }
 
@@ -90,6 +104,28 @@ const INIT_CONVS: Conv[] = [
   { id: 1, title: '入职流程咨询', time: '2小时前' },
   { id: 2, title: '年假政策查询', time: '昨天' },
   { id: 3, title: '面试安排问题', time: '3天前' },
+]
+
+const POLICY_CATEGORIES = [
+  { name: '招聘流程', count: 18, desc: '简历、面试、Offer、背调' },
+  { name: '入职手续', count: 12, desc: '材料、系统、试用期、导师' },
+  { name: '薪酬福利', count: 21, desc: '工资、奖金、五险一金' },
+  { name: '休假考勤', count: 16, desc: '年假、病假、调休、加班' },
+  { name: '转正离职', count: 9, desc: '转正评估、交接、证明' },
+]
+
+const SLA_ITEMS = [
+  { label: '简历反馈', value: '3 个工作日' },
+  { label: '面试结果', value: '2 个工作日' },
+  { label: 'Offer 审批', value: '1-2 个工作日' },
+  { label: 'HR 人工答复', value: '1 个工作日' },
+]
+
+const POLICY_SOURCES = [
+  '《招聘流程管理办法》2026.03',
+  '《员工休假与考勤细则》2026.01',
+  '《薪酬发放与绩效奖金说明》2025.12',
+  '《入职材料与试用期管理规范》2026.02',
 ]
 
 // ── Markdown overrides ─────────────────────────────────────────────────────
@@ -169,6 +205,7 @@ export default function ChatbotPage() {
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const typingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const micTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const nextIdRef = useRef(100)
 
   useEffect(() => {
     return () => {
@@ -200,8 +237,11 @@ export default function ChatbotPage() {
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
     if (typingIntervalRef.current) clearInterval(typingIntervalRef.current)
 
-    const userMsg: Message = { id: Date.now(), role: 'user', content: trimmed, isTyping: false }
-    const aiId = Date.now() + 1
+    nextIdRef.current += 1
+    const userId = nextIdRef.current
+    nextIdRef.current += 1
+    const aiId = nextIdRef.current
+    const userMsg: Message = { id: userId, role: 'user', content: trimmed, isTyping: false }
     const fullText = getAnswer(trimmed)
     const aiMsg: Message = { id: aiId, role: 'ai', content: '', isTyping: true }
 
@@ -244,22 +284,25 @@ export default function ChatbotPage() {
     // 将当前对话存入历史
     const firstUser = messages.find(m => m.role === 'user')
     if (firstUser) {
+      nextIdRef.current += 1
       setConversations(prev => [
-        { id: Date.now(), title: firstUser.content.slice(0, 16), time: '刚刚' },
+        { id: nextIdRef.current, title: firstUser.content.slice(0, 16), time: '刚刚' },
         ...prev,
       ])
     }
-    setMessages([{ ...WELCOME, id: Date.now() }])
+    nextIdRef.current += 1
+    setMessages([{ ...WELCOME, id: nextIdRef.current }])
     setInput('')
   }
 
   return (
     <div
-      className="fixed top-14 left-0 right-0 bottom-0 flex"
+      className="fixed top-14 left-0 right-0 bottom-0 flex overflow-hidden"
       style={{ background: '#0a0f1e' }}
     >
+      <DemoBackdrop density="dense" />
       {/* ── Sidebar ──────────────────────────────────────────────────────── */}
-      <div className="w-[260px] shrink-0 flex flex-col border-r border-white/[0.06]">
+      <div className="relative z-10 w-[260px] shrink-0 flex flex-col border-r border-white/[0.06] bg-[#0a0f1e]/45 backdrop-blur-md">
         {/* Header */}
         <div className="h-12 flex items-center justify-between px-4 border-b border-white/[0.06]">
           <span className="text-sm font-semibold text-foreground">HR 小智</span>
@@ -318,7 +361,7 @@ export default function ChatbotPage() {
       </div>
 
       {/* ── Main ─────────────────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="relative z-10 flex-1 flex flex-col min-w-0">
         {/* Title bar */}
         <div className="h-12 flex items-center justify-center shrink-0 border-b border-white/[0.06]">
           <span className="text-sm font-medium text-foreground/70">{currentTitle}</span>
@@ -483,6 +526,64 @@ export default function ChatbotPage() {
           </div>
         </div>
       </div>
+
+      <aside className="relative z-10 hidden w-[340px] shrink-0 flex-col gap-3 border-l border-white/[0.06] bg-[#0a0f1e]/45 p-3 backdrop-blur-md xl:flex">
+        <DemoPanel className="p-4" tone="cyan">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.22em] text-white/40">Policy Knowledge Hub</p>
+              <h2 className="mt-1 text-base font-semibold text-white">HR 政策知识中枢</h2>
+            </div>
+            <StatusPill label="知识库" value="在线" tone="emerald" />
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <MetricTile label="政策条款" value="76" sub="已结构化" />
+            <MetricTile label="命中率" value="94%" sub="近 7 日问答" tone="emerald" />
+          </div>
+        </DemoPanel>
+
+        <DemoPanel className="p-3" tone="violet">
+          <p className="text-[10px] uppercase tracking-[0.2em] text-white/40">Policy Categories</p>
+          <div className="mt-3 space-y-2">
+            {POLICY_CATEGORIES.map((item) => (
+              <button
+                key={item.name}
+                onClick={() => sendMessage(`${item.name} 有哪些常见政策？`)}
+                className="block w-full rounded-lg border border-white/[0.06] bg-white/[0.035] px-3 py-2 text-left transition-colors hover:border-cyan-400/30 hover:bg-cyan-400/[0.04]"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-white/75">{item.name}</span>
+                  <span className="rounded bg-white/[0.06] px-1.5 py-0.5 text-[10px] text-white/40">{item.count}</span>
+                </div>
+                <p className="mt-1 truncate text-[10px] text-white/35">{item.desc}</p>
+              </button>
+            ))}
+          </div>
+        </DemoPanel>
+
+        <DemoPanel className="p-3" tone="amber">
+          <p className="text-[10px] uppercase tracking-[0.2em] text-white/40">Process SLA</p>
+          <div className="mt-3 space-y-2">
+            {SLA_ITEMS.map((item) => (
+              <div key={item.label} className="flex items-center justify-between rounded-lg bg-white/[0.04] px-3 py-2">
+                <span className="text-xs text-white/50">{item.label}</span>
+                <span className="text-xs font-medium text-white/85">{item.value}</span>
+              </div>
+            ))}
+          </div>
+        </DemoPanel>
+
+        <DemoPanel className="p-3" tone="blue">
+          <p className="text-[10px] uppercase tracking-[0.2em] text-white/40">Referenced Sources</p>
+          <div className="mt-3 space-y-2">
+            {POLICY_SOURCES.map((source) => (
+              <div key={source} className="rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-2 text-[10px] leading-relaxed text-white/45">
+                {source}
+              </div>
+            ))}
+          </div>
+        </DemoPanel>
+      </aside>
     </div>
   )
 }

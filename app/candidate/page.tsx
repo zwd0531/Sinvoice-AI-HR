@@ -12,6 +12,7 @@ import {
 } from 'recharts'
 import { ChevronDown, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { DemoBackdrop, DemoPanel, MetricTile, StatusPill } from '@/components/DemoBackdrop'
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -87,6 +88,20 @@ const EXERCISES = [
   },
 ]
 
+const REVIEW_METRICS = [
+  { label: '综合表现', value: '82', sub: '高于同岗均值 11 分', tone: 'cyan' as const },
+  { label: '同批排名', value: 'Top 22%', sub: '86 位候选人匿名对比', tone: 'emerald' as const },
+  { label: '关键片段', value: '4', sub: '可直接跳转复看', tone: 'violet' as const },
+  { label: '训练任务', value: '3', sub: '基于薄弱项生成', tone: 'amber' as const },
+]
+
+const PEER_BENCHMARK = [
+  { label: '技术深度', candidate: 83, peer: 72 },
+  { label: '表达清晰', candidate: 76, peer: 68 },
+  { label: '案例丰富', candidate: 62, peer: 70 },
+  { label: '应变能力', candidate: 79, peer: 65 },
+]
+
 // ── framer-motion variants ─────────────────────────────────────────────────
 
 const timelineContainer: Variants = {
@@ -109,18 +124,16 @@ export default function CandidateReviewPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [videoSrc, setVideoSrc] = useState<string | null>(null)
   const [currentTime, setCurrentTime] = useState(0)
-  const [timelineStarted, setTimelineStarted] = useState(false)
+  const timelineStarted = true
   const [activeExercise, setActiveExercise] = useState<number | null>(null)
   const [answers, setAnswers] = useState<Record<number, string>>({})
   const [feedbackText, setFeedbackText] = useState<Record<number, string>>({})
   const [feedbackDone, setFeedbackDone] = useState<Record<number, boolean>>({})
   const subtitleRefs = useRef<(HTMLDivElement | null)[]>([])
   const [reviewVisible, setReviewVisible] = useState(false)
-  const [analysisVisible, setAnalysisVisible] = useState(false)
+  const [analysisVisible, setAnalysisVisible] = useState(true)
   const [videoDuration, setVideoDuration] = useState(0)
   const feedbackIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-
-  useEffect(() => { setTimelineStarted(true) }, [])
 
   useEffect(() => () => {
     if (feedbackIntervalRef.current) clearInterval(feedbackIntervalRef.current)
@@ -167,7 +180,8 @@ export default function CandidateReviewPage() {
   }
 
   return (
-    <div className="min-h-screen pb-16">
+    <div className="relative -mx-6 -my-6 min-h-[calc(100vh-3.5rem)] overflow-hidden px-6 py-6 pb-16">
+      <DemoBackdrop density="normal" />
       {/* ── Sticky Top Bar ──────────────────────────────────────────────── */}
       <div className="sticky top-14 z-20 -mx-6 px-6 py-3 bg-background/90 backdrop-blur-md border-b border-border/50 flex items-center justify-between">
         <div className="flex items-center gap-2.5 text-sm">
@@ -227,8 +241,49 @@ export default function CandidateReviewPage() {
         </motion.div>
       </div>
 
+      <div className="relative z-10 mt-6 grid gap-3 lg:grid-cols-[1.2fr_1fr]">
+        <DemoPanel className="p-4" tone="cyan">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.22em] text-white/40">
+                Candidate Replay Command Center
+              </p>
+              <h1 className="mt-1 text-lg font-semibold text-white">李小明 · 算法工程师面试复盘</h1>
+              <p className="mt-1 max-w-2xl text-xs leading-relaxed text-white/50">
+                默认演示态已载入：AI 根据面试录像、字幕转写和同批候选人基准，生成竞争力报告与针对性训练路径。
+              </p>
+            </div>
+            <StatusPill label="复盘状态" value={videoSrc ? '已接入上传视频' : '演示样本'} tone={videoSrc ? 'emerald' : 'blue'} />
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-2 xl:grid-cols-4">
+            {REVIEW_METRICS.map((metric) => (
+              <MetricTile key={metric.label} {...metric} />
+            ))}
+          </div>
+        </DemoPanel>
+
+        <DemoPanel className="p-4" tone="violet">
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] uppercase tracking-[0.22em] text-white/40">Peer Benchmark</p>
+            <span className="text-[10px] text-white/35">同岗位匿名样本 n=86</span>
+          </div>
+          <div className="mt-3 space-y-2">
+            {PEER_BENCHMARK.map((item) => (
+              <div key={item.label} className="grid grid-cols-[64px_1fr_36px] items-center gap-2 text-xs">
+                <span className="text-white/55">{item.label}</span>
+                <div className="relative h-2 overflow-hidden rounded-full bg-white/[0.08]">
+                  <div className="absolute inset-y-0 left-0 rounded-full bg-violet-400/35" style={{ width: `${item.peer}%` }} />
+                  <div className="absolute inset-y-0 left-0 rounded-full bg-cyan-300/80" style={{ width: `${item.candidate}%` }} />
+                </div>
+                <span className="text-right font-mono text-cyan-100">{item.candidate}</span>
+              </div>
+            ))}
+          </div>
+        </DemoPanel>
+      </div>
+
       {/* ── Main Two Columns ─────────────────────────────────────────────── */}
-      <div className="flex gap-8 mt-8 items-start">
+      <div className="relative z-10 flex gap-8 mt-8 items-start">
         {/* Left 55% */}
         <div className="w-[55%] shrink-0">
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">
@@ -272,16 +327,25 @@ export default function CandidateReviewPage() {
               className="w-full rounded-xl border-2 border-dashed border-border/50 bg-card/30 hover:bg-card/60 hover:border-primary/40 transition-colors cursor-pointer flex flex-col items-center justify-center gap-3"
               style={{ aspectRatio: '16/9' }}
             >
-              <Upload className="w-8 h-8 text-muted-foreground" />
+              <div className="grid size-16 place-items-center rounded-full border border-primary/35 bg-primary/10">
+                <Upload className="w-8 h-8 text-primary" />
+              </div>
               <div className="text-center">
-                <p className="text-sm text-foreground/70 font-medium">点击上传面试录像</p>
-                <p className="text-xs text-muted-foreground mt-1">支持 MP4、WebM、MOV 格式</p>
+                <p className="text-sm text-foreground/80 font-medium">演示复盘样本已载入 · 点击可替换真实录像</p>
+                <p className="text-xs text-muted-foreground mt-1">当前展示模拟字幕、关键片段与 AI 竞争力分析</p>
+              </div>
+              <div className="mt-2 flex flex-wrap justify-center gap-2">
+                {['ASR 已完成', '4 个关键节点', '报告可导出'].map((item) => (
+                  <span key={item} className="rounded-md border border-white/[0.08] bg-white/[0.04] px-2 py-1 text-[10px] text-white/45">
+                    {item}
+                  </span>
+                ))}
               </div>
             </div>
           )}
 
           {/* Time markers + Subtitles — only after video upload */}
-          {videoSrc && (
+          {(videoSrc || analysisVisible) && (
             <>
               <div className="flex flex-wrap gap-2 mt-3">
                 {MARKERS.map((m) => (
@@ -330,7 +394,7 @@ export default function CandidateReviewPage() {
 
           {/* Video summary button */}
           <button
-            disabled={!videoSrc}
+            disabled={false}
             onClick={() => setAnalysisVisible(true)}
             className="mt-4 w-full py-2.5 rounded-xl border border-primary/40 bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >

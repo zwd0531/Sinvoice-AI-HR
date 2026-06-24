@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowRight, CheckCircle2, ChevronRight, FileText, Mic, RotateCcw } from 'lucide-react'
+import { DemoBackdrop, DemoPanel, StatusPill } from '@/components/DemoBackdrop'
 
 // ── Data ───────────────────────────────────────────────────────────────────
 
@@ -49,6 +50,34 @@ const TOP_CANDIDATES = [
   { rank: 8,  name: '林欣', total: 84, skill: 83, express: 86, status: '推荐进入线下' },
   { rank: 9,  name: '陈超', total: 83, skill: 84, express: 81, status: '推荐进入线下' },
   { rank: 10, name: '杨帆', total: 81, skill: 80, express: 82, status: '推荐进入线下' },
+]
+
+const QUESTION_ROUTE = [
+  { label: 'STAR 行为题', state: '当前', tone: 'cyan' as const },
+  { label: '技术深度题', state: '待播报', tone: 'blue' as const },
+  { label: '协作冲突题', state: '待播报', tone: 'violet' as const },
+  { label: '价值观题', state: '待播报', tone: 'emerald' as const },
+  { label: '职业规划题', state: '待播报', tone: 'amber' as const },
+]
+
+const ENV_CHECKS = [
+  { label: '麦克风', value: '正常', tone: 'emerald' as const },
+  { label: '环境噪声', value: '32dB', tone: 'cyan' as const },
+  { label: '网络延迟', value: '42ms', tone: 'blue' as const },
+  { label: '身份核验', value: '通过', tone: 'emerald' as const },
+]
+
+const HR_FUNNEL = [
+  { label: '邀约', value: 500, pct: 100, tone: '#22d3ee' },
+  { label: '已完成', value: 487, pct: 97, tone: '#34d399' },
+  { label: '推荐复试', value: 165, pct: 34, tone: '#8b5cf6' },
+  { label: '强烈推荐', value: 18, pct: 4, tone: '#f59e0b' },
+]
+
+const ANOMALIES = [
+  { name: '候选人 074', issue: '答题时长异常短', level: '需复核' },
+  { name: '候选人 138', issue: '环境噪声过高', level: '建议重试' },
+  { name: '候选人 266', issue: '答案重复度偏高', level: '人工确认' },
 ]
 
 // Pre-computed bar heights so they're stable across renders
@@ -148,7 +177,6 @@ export default function AIInterviewPage() {
   // HR counting animation
   useEffect(() => {
     if (activeTab !== 'hr') return
-    setHrCompleted(0); setHrAvg(0); setHrPass(0); setBarAnimated(false)
     let frame = 0
     const iv = setInterval(() => {
       frame++
@@ -208,19 +236,30 @@ export default function AIInterviewPage() {
     toastRef.current = setTimeout(() => setToast(null), 2500)
   }
 
+  function switchTab(tab: 'candidate' | 'hr') {
+    setActiveTab(tab)
+    if (tab === 'hr') {
+      setHrCompleted(0)
+      setHrAvg(0)
+      setHrPass(0)
+      setBarAnimated(false)
+    }
+  }
+
   const q = QUESTIONS[questionIndex]
 
   return (
     <div
-      className="fixed top-14 left-0 right-0 bottom-0 flex flex-col"
+      className="fixed top-14 left-0 right-0 bottom-0 flex flex-col overflow-hidden"
       style={{ background: '#0a0f1e' }}
     >
+      <DemoBackdrop density="dense" />
       {/* ── Tab bar ─────────────────────────────────────────────────────── */}
-      <div className="h-10 flex items-center border-b border-white/[0.06] shrink-0 px-2">
+      <div className="relative z-10 h-10 flex items-center border-b border-white/[0.06] shrink-0 px-2 bg-[#0a0f1e]/55 backdrop-blur-md">
         {(['candidate', 'hr'] as const).map(tab => (
           <button
             key={tab}
-            onClick={() => setActiveTab(tab)}
+            onClick={() => switchTab(tab)}
             className="relative h-full px-5 text-sm font-medium transition-colors"
             style={{ color: activeTab === tab ? '#22d3ee' : '#64748b' }}
           >
@@ -239,7 +278,7 @@ export default function AIInterviewPage() {
           CANDIDATE VIEW
       ══════════════════════════════════════════════════════════════════ */}
       {activeTab === 'candidate' && (
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="relative z-10 flex-1 flex flex-col overflow-hidden">
           {!finished ? (<>
 
           {/* Progress bar */}
@@ -275,6 +314,61 @@ export default function AIInterviewPage() {
                 ))}
               </div>
             )}
+          </div>
+
+          <div className="pointer-events-none absolute left-6 top-24 bottom-5 hidden w-64 flex-col gap-3 xl:flex">
+            <DemoPanel className="pointer-events-auto p-3" tone="cyan">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-white/40">Question Route</p>
+              <div className="mt-3 space-y-2">
+                {QUESTION_ROUTE.map((item, i) => (
+                  <div key={item.label} className="flex items-center gap-2 rounded-lg bg-white/[0.035] px-3 py-2">
+                    <span className={`flex size-5 items-center justify-center rounded-full text-[10px] ${i <= questionIndex ? 'bg-cyan-400/20 text-cyan-100' : 'bg-white/[0.05] text-white/35'}`}>
+                      {i + 1}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs text-white/70">{item.label}</p>
+                      <p className="text-[10px] text-white/35">{i < questionIndex ? '已完成' : i === questionIndex ? item.state : '待播报'}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </DemoPanel>
+
+            <DemoPanel className="pointer-events-auto p-3" tone="emerald">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-white/40">Environment Check</p>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                {ENV_CHECKS.map((item) => (
+                  <StatusPill key={item.label} {...item} />
+                ))}
+              </div>
+            </DemoPanel>
+          </div>
+
+          <div className="pointer-events-none absolute right-6 top-24 bottom-5 hidden w-72 flex-col gap-3 xl:flex">
+            <DemoPanel className="pointer-events-auto p-3" tone="violet">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-white/40">Scoring Dimensions</p>
+              <div className="mt-3 space-y-2">
+                {MOCK_REPORT.dimensions.map((item) => (
+                  <div key={item.name}>
+                    <div className="mb-1 flex justify-between text-[10px]">
+                      <span className="text-white/50">{item.name}</span>
+                      <span className="font-mono text-cyan-100">{item.score}</span>
+                    </div>
+                    <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.08]">
+                      <div className="h-full rounded-full bg-cyan-300/70" style={{ width: `${item.score}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </DemoPanel>
+
+            <DemoPanel className="pointer-events-auto p-3" tone="amber">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-white/40">Candidate Guidance</p>
+              <div className="mt-3 space-y-2 text-xs leading-relaxed text-white/55">
+                <p>请用 STAR 结构回答，优先说明量化结果和个人贡献。</p>
+                <p>录音阶段 AI 会进行实时转写，结束后自动生成评估报告。</p>
+              </div>
+            </DemoPanel>
           </div>
 
           {/* Main content */}
@@ -605,8 +699,48 @@ export default function AIInterviewPage() {
           HR DASHBOARD VIEW
       ══════════════════════════════════════════════════════════════════ */}
       {activeTab === 'hr' && (
-        <div className="flex-1 overflow-y-auto px-8 py-6">
-          <div className="max-w-4xl mx-auto space-y-8">
+        <div className="relative z-10 flex-1 overflow-y-auto px-8 py-6">
+          <div className="max-w-6xl mx-auto space-y-8">
+
+            <div className="grid gap-4 xl:grid-cols-[1.3fr_1fr]">
+              <DemoPanel className="p-4" tone="cyan">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.22em] text-white/40">Batch Interview Funnel</p>
+                    <h2 className="mt-1 text-lg font-semibold text-white">校招算法岗 · 500 人异步面试</h2>
+                  </div>
+                  <StatusPill label="批次状态" value="自动评分中" tone="emerald" />
+                </div>
+                <div className="mt-4 grid grid-cols-4 gap-3">
+                  {HR_FUNNEL.map((item) => (
+                    <div key={item.label} className="rounded-xl border border-white/[0.06] bg-white/[0.035] p-3">
+                      <p className="text-[10px] text-white/40">{item.label}</p>
+                      <p className="mt-1 text-xl font-semibold text-white tabular-nums">{item.value}</p>
+                      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/[0.08]">
+                        <div className="h-full rounded-full" style={{ width: `${item.pct}%`, background: item.tone }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </DemoPanel>
+
+              <DemoPanel className="p-4" tone="amber">
+                <p className="text-[10px] uppercase tracking-[0.22em] text-white/40">Exception Queue</p>
+                <div className="mt-3 space-y-2">
+                  {ANOMALIES.map((item) => (
+                    <div key={item.name} className="flex items-center justify-between gap-3 rounded-lg bg-white/[0.04] px-3 py-2">
+                      <div className="min-w-0">
+                        <p className="truncate text-xs font-medium text-white/80">{item.name}</p>
+                        <p className="truncate text-[10px] text-white/40">{item.issue}</p>
+                      </div>
+                      <span className="shrink-0 rounded border border-amber-300/20 bg-amber-300/10 px-2 py-1 text-[10px] text-amber-100">
+                        {item.level}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </DemoPanel>
+            </div>
 
             {/* Stats row */}
             <div className="grid grid-cols-4 gap-4">
