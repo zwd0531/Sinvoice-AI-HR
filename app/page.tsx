@@ -115,9 +115,9 @@ export default function Home() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
         >
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border/50 text-xs text-muted-foreground">
-            <span className="size-1.5 rounded-full bg-primary inline-block" />
-            思必驰 AI 办公本 · Demo 演示版本
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-primary/20 bg-primary/[0.06] text-xs text-muted-foreground backdrop-blur-sm">
+            <span className="size-1.5 rounded-full bg-primary inline-block animate-pulse" />
+            思必驰 AI 办公本 · 智慧招聘平台
           </div>
 
           <h1
@@ -143,14 +143,15 @@ export default function Home() {
           <div className="flex items-center justify-center gap-4 pt-2">
             <Link
               href="/hr"
-              className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium rounded-md transition-all hover:opacity-90"
+              className="group inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium rounded-md transition-all hover:opacity-90 hover:-translate-y-0.5"
               style={{
                 background: 'oklch(0.79 0.14 200)',
                 color: 'oklch(0.11 0.04 255)',
+                boxShadow: '0 8px 30px oklch(0.79 0.14 200 / 35%)',
               }}
             >
               HR 工作台
-              <ArrowRight className="size-4" />
+              <ArrowRight className="size-4 group-hover:translate-x-0.5 transition-transform" />
             </Link>
             <Link
               href="/candidate"
@@ -218,7 +219,7 @@ export default function Home() {
             >
               <Link
                 href={href}
-                className="group relative block rounded-xl border border-border/40 p-6 hover:border-primary/40 hover:bg-primary/[0.03] transition-colors h-full"
+                className="group relative block rounded-xl border border-border/40 p-6 hover:border-primary/40 hover:bg-primary/[0.03] hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 h-full"
               >
                 <div className="flex items-center justify-between mb-5">
                   <span className="text-xs font-mono text-muted-foreground/40">{step}</span>
@@ -232,7 +233,7 @@ export default function Home() {
                 </div>
                 <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
                 <div className="mt-4 flex items-center gap-1 text-xs text-muted-foreground/40 group-hover:text-primary/60 transition-colors">
-                  <span>进入演示</span>
+                  <span>进入工作台</span>
                   <ArrowRight className="size-3" />
                 </div>
               </Link>
@@ -445,7 +446,7 @@ export default function Home() {
         >
           <h2 className="text-4xl font-bold text-foreground">立即体验各功能模块</h2>
           <p className="text-muted-foreground text-sm">
-            选择一个入口开始探索，所有功能均为 Demo 模拟数据
+            选择一个入口开始探索，覆盖招聘全流程的智能能力
           </p>
         </motion.div>
 

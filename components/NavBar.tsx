@@ -19,11 +19,15 @@ export function NavBar() {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 h-14 border-b border-border/50 bg-background/80 backdrop-blur-md">
       <div className="flex items-center justify-between h-full max-w-[1440px] mx-auto px-6">
-        <Link href="/" className="text-base font-semibold tracking-wide text-primary">
+        <Link href="/" className="group flex items-center gap-2.5 text-base font-semibold tracking-wide text-primary">
+          <span className="relative flex size-2.5">
+            <span className="absolute inline-flex size-full rounded-full bg-primary/60 opacity-75 animate-ping" />
+            <span className="relative inline-flex size-2.5 rounded-full bg-primary" />
+          </span>
           思必驰 · 智慧招聘
         </Link>
 
-        <nav className="flex items-center gap-1">
+        <nav className="flex items-center gap-0.5">
           {navLinks.map(({ label, href }) => {
             const isActive =
               href === '/' ? pathname === '/' : pathname.startsWith(href)
@@ -32,16 +36,13 @@ export function NavBar() {
                 key={href}
                 href={href}
                 className={cn(
-                  'relative px-3 py-1.5 text-sm font-medium transition-colors rounded-md',
+                  'relative px-3 py-1.5 text-sm font-medium transition-all rounded-md',
                   isActive
-                    ? 'text-primary'
-                    : 'text-muted-foreground hover:text-foreground'
+                    ? 'text-primary bg-primary/10'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
                 )}
               >
                 {label}
-                {isActive && (
-                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-4/5 rounded-full bg-primary" />
-                )}
               </Link>
             )
           })}
