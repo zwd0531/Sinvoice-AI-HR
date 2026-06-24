@@ -875,7 +875,7 @@ export default function AIInterviewPage() {
               {['查看完整候选人列表', '导出评分报告', '一键发送面试邀约'].map((label, i) => (
                 <button
                   key={label}
-                  onClick={() => showToast('当前为 Demo 模式，该功能暂不可用')}
+                  onClick={() => showToast('该功能即将上线，敬请期待')}
                   className="px-4 py-2 text-sm rounded-lg border transition-colors"
                   style={
                     i === 2

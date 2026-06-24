@@ -117,7 +117,7 @@ export default function Home() {
         >
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-primary/20 bg-primary/[0.06] text-xs text-muted-foreground backdrop-blur-sm">
             <span className="size-1.5 rounded-full bg-primary inline-block animate-pulse" />
-            思必驰 AI 办公本 · Demo 演示版本
+            思必驰 AI 办公本 · 智慧招聘平台
           </div>
 
           <h1
@@ -233,7 +233,7 @@ export default function Home() {
                 </div>
                 <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
                 <div className="mt-4 flex items-center gap-1 text-xs text-muted-foreground/40 group-hover:text-primary/60 transition-colors">
-                  <span>进入演示</span>
+                  <span>进入工作台</span>
                   <ArrowRight className="size-3" />
                 </div>
               </Link>
@@ -446,7 +446,7 @@ export default function Home() {
         >
           <h2 className="text-4xl font-bold text-foreground">立即体验各功能模块</h2>
           <p className="text-muted-foreground text-sm">
-            选择一个入口开始探索，所有功能均为 Demo 模拟数据
+            选择一个入口开始探索，覆盖招聘全流程的智能能力
           </p>
         </motion.div>
 

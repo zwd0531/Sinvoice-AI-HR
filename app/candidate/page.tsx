@@ -250,10 +250,10 @@ export default function CandidateReviewPage() {
               </p>
               <h1 className="mt-1 text-lg font-semibold text-white">李小明 · 算法工程师面试复盘</h1>
               <p className="mt-1 max-w-2xl text-xs leading-relaxed text-white/50">
-                默认演示态已载入：AI 根据面试录像、字幕转写和同批候选人基准，生成竞争力报告与针对性训练路径。
+                AI 根据面试录像、字幕转写和同批候选人基准，生成竞争力报告与针对性训练路径。
               </p>
             </div>
-            <StatusPill label="复盘状态" value={videoSrc ? '已接入上传视频' : '演示样本'} tone={videoSrc ? 'emerald' : 'blue'} />
+            <StatusPill label="复盘状态" value={videoSrc ? '已接入上传视频' : '样本已载入'} tone={videoSrc ? 'emerald' : 'blue'} />
           </div>
           <div className="mt-4 grid grid-cols-2 gap-2 xl:grid-cols-4">
             {REVIEW_METRICS.map((metric) => (
@@ -331,8 +331,8 @@ export default function CandidateReviewPage() {
                 <Upload className="w-8 h-8 text-primary" />
               </div>
               <div className="text-center">
-                <p className="text-sm text-foreground/80 font-medium">演示复盘样本已载入 · 点击可替换真实录像</p>
-                <p className="text-xs text-muted-foreground mt-1">当前展示模拟字幕、关键片段与 AI 竞争力分析</p>
+                <p className="text-sm text-foreground/80 font-medium">复盘样本已载入 · 点击可替换真实录像</p>
+                <p className="text-xs text-muted-foreground mt-1">当前展示字幕转写、关键片段与 AI 竞争力分析</p>
               </div>
               <div className="mt-2 flex flex-wrap justify-center gap-2">
                 {['ASR 已完成', '4 个关键节点', '报告可导出'].map((item) => (
