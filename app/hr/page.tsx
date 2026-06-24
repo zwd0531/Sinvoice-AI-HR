@@ -206,45 +206,64 @@ export default function HRAssistantPage() {
     let raf = 0
     let phase = 0
 
+    const dpr = Math.min(window.devicePixelRatio || 1, 2)
+    const BAR_W = 2.5 // logical bar width (px)
+    const GAP = 2.5 // gap between bars (px)
+    let bars: number[] = [] // smoothed amplitude per bar (0..1)
+
     const resize = () => {
-      canvas.width = canvas.offsetWidth
-      canvas.height = canvas.offsetHeight
+      const cssW = canvas.offsetWidth
+      const cssH = canvas.offsetHeight
+      canvas.width = cssW * dpr
+      canvas.height = cssH * dpr
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      const count = Math.max(1, Math.floor(cssW / (BAR_W + GAP)))
+      if (bars.length !== count) bars = new Array(count).fill(0)
     }
     const ro = new ResizeObserver(resize)
     ro.observe(canvas)
     resize()
 
     const draw = () => {
-      const W = canvas.width
-      const H = canvas.height
+      const W = canvas.offsetWidth
+      const H = canvas.offsetHeight
       ctx.clearRect(0, 0, W, H)
-      const amplitude = isSpeakingRef.current ? H * 0.38 : H * 0.06
-      const freq = isSpeakingRef.current ? 0.035 : 0.02
-      const speed = isSpeakingRef.current ? 0.12 : 0.04
+
+      const speaking = isSpeakingRef.current
+      const speed = speaking ? 0.14 : 0.05
       phase += speed
+      const mid = H / 2
+      const maxBar = H * 0.42
+      const count = bars.length
 
-      ctx.beginPath()
-      ctx.strokeStyle = 'rgba(34,211,238,0.75)'
-      ctx.lineWidth = 1.5
-      for (let x = 0; x <= W; x++) {
-        const y =
-          H / 2 +
-          Math.sin(x * freq + phase) * amplitude +
-          Math.sin(x * freq * 1.7 + phase * 0.8) * amplitude * 0.4
-        if (x === 0) ctx.moveTo(x, y)
-        else ctx.lineTo(x, y)
+      for (let i = 0; i < count; i++) {
+        // layered sine "voice" envelope + subtle per-bar jitter
+        const env =
+          0.5 +
+          0.5 * Math.sin(i * 0.45 + phase) * Math.sin(i * 0.12 + phase * 0.6)
+        const jitter = speaking ? Math.random() * 0.35 : 0
+        const target = speaking
+          ? Math.max(0.08, Math.abs(env) * 0.85 + jitter)
+          : 0.06 + 0.04 * Math.abs(Math.sin(i * 0.3 + phase))
+        // ease toward target for organic motion
+        bars[i] += (target - bars[i]) * (speaking ? 0.35 : 0.12)
+
+        const h = Math.max(BAR_W, bars[i] * maxBar)
+        const x = i * (BAR_W + GAP) + GAP / 2
+        const alpha = 0.35 + bars[i] * 0.6
+
+        const grad = ctx.createLinearGradient(0, mid - h, 0, mid + h)
+        grad.addColorStop(0, `rgba(34,211,238,${alpha})`)
+        grad.addColorStop(0.5, `rgba(56,189,248,${alpha})`)
+        grad.addColorStop(1, `rgba(99,102,241,${alpha * 0.7})`)
+        ctx.fillStyle = grad
+
+        // rounded mirrored bar centered on mid-line
+        const r = BAR_W / 2
+        ctx.beginPath()
+        ctx.roundRect(x, mid - h, BAR_W, h * 2, r)
+        ctx.fill()
       }
-      ctx.stroke()
-
-      ctx.lineTo(W, H)
-      ctx.lineTo(0, H)
-      ctx.closePath()
-      const grad = ctx.createLinearGradient(0, 0, 0, H)
-      grad.addColorStop(0, 'rgba(34,211,238,0.15)')
-      grad.addColorStop(1, 'rgba(34,211,238,0)')
-      ctx.fillStyle = grad
-      ctx.fill()
-
       raf = requestAnimationFrame(draw)
     }
     draw()
@@ -596,7 +615,7 @@ export default function HRAssistantPage() {
           </div>
 
           {/* Waveform canvas */}
-          <div className="h-12 shrink-0 border-t border-border/50 relative">
+          <div className="h-14 shrink-0 border-t border-border/50 relative bg-gradient-to-b from-primary/[0.03] to-transparent">
             <canvas
               ref={waveCanvasRef}
               className="absolute inset-0 w-full h-full"
