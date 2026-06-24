@@ -81,12 +81,13 @@ export function DemoPanel({
   return (
     <div
       className={cn(
-        'relative overflow-hidden rounded-xl border bg-white/[0.035] backdrop-blur-md',
+        'group/panel relative overflow-hidden rounded-xl border bg-white/[0.035] backdrop-blur-md transition-all duration-300 hover:bg-white/[0.06] hover:shadow-[0_8px_28px_rgba(34,211,238,0.08)]',
         toneClasses[tone],
         className
       )}
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/20" />
+      <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover/panel:opacity-100" style={{ background: 'radial-gradient(circle at 50% 0%, rgba(34,211,238,0.08), transparent 60%)' }} />
       {children}
     </div>
   )
