@@ -167,6 +167,15 @@ export default function HRAssistantPage() {
     }
   }, [isStarted, displayedCount, isPaused, isTyping])
 
+  // ── Pause → calm the waveform ────────────────────────────────────────────
+
+  useEffect(() => {
+    if (isPaused) {
+      isSpeakingRef.current = false
+      setIsSpeaking(false)
+    }
+  }, [isPaused])
+
   // ── Scroll to bottom ────────────────────────────────────────────────────
 
   useEffect(() => {
